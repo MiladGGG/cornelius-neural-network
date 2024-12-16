@@ -23,7 +23,8 @@ def main():
     
     drawing_canvas = np.zeros((n_pixels,n_pixels), dtype=np.uint8)
     
-    draw_thickness = 150
+    draw_intensity = 100
+    draw_thickness = 5
 
     canvas_list = []
 
@@ -41,8 +42,43 @@ def main():
 
 
 
-    def parse_click(event):
-        draw(event.x,event.y,255)
+
+
+    def calculateWeight(hex): # 0 is white, 255 is black
+            old_fill = 255 - int(hex[1:3], base=16) 
+            return old_fill
+ 
+    def addWeights(weight1, weight2):
+        weight = weight1 + weight2
+        weight = min(weight , 255)
+        weight = max(weight, 0)
+        return weight
+
+    def calculateColour(weight): #Returns String hex code eg #FFFFFF
+        #Todo, add color options while keeping weight functionalilty the same
+        hex_str =  hex(255-weight)[2:4]
+        if len(hex_str) == 1: #Example: #999 -> #090909
+            hex_str = "0"+hex_str
+        return "#"+hex_str * 3 
+
+
+
+
+
+
+    def parse_R_click(event):
+        draw(event.x,event.y,-255)
+
+    def parse_L_click(event):
+        draw(event.x,event.y,draw_intensity)
+
+
+    def erase(event):
+        for square in canvas_list:
+            canvas.itemconfig(square, fill="#FFFFFF")  # Clear all to white
+
+
+
 
     def draw(event_x,event_y, weight):
         x = event_x
@@ -55,29 +91,43 @@ def main():
         if 0 <= mouse_x < n_pixels and 0 <= mouse_y < n_pixels: #In bounds
             
             target = canvas_list[mouse_y + mouse_x* n_pixels]
-            old_fill = 255 - int(canvas.itemcget(target,"fill")[1:3], base=16) # 0 is white, 255 is black
-            if  weight > old_fill:
-                new_fill = old_fill + weight #Add on black colouring
-                if new_fill > 255: #255 cap
-                    new_fill = 255
-                string_code = "#{}".format(hex(255 - new_fill)[2:] * 3)
-                canvas.itemconfig(target, fill=string_code)  # Change the fill color to black
-
-                if weight - draw_thickness > 0: #Shade nearby pixels
-                    draw(event_x-pixel_size,event_y, weight - draw_thickness) #Left
-                    draw(event_x+pixel_size,event_y,weight - draw_thickness) #Right
-
-                    draw(event_x,event_y -pixel_size ,weight - draw_thickness) #Down
-                    draw(event_x,event_y +pixel_size ,weight - draw_thickness) #Up
-                    
 
 
-            # Neural network array value
-            # drawing_canvas[mouse_y, mouse_x] = 255
+            new_weight = addWeights(calculateWeight(canvas.itemcget(target, "fill")), weight)
+            new_color = calculateColour(new_weight)
+            canvas.itemconfig(target, fill=new_color)  # Change the fill color to black
 
-        
-    canvas.bind("<B1-Motion>", parse_click)
+            weight_loss = (draw_intensity // draw_thickness)
+            spread_weight = weight - weight_loss
+            # print(spread_weight)
+
+            if spread_weight > 0 or (weight < 0 and -(255+weight) // weight_loss < draw_thickness): #Shade nearby pixels
+                draw(event_x-pixel_size,event_y, spread_weight) #Left
+                draw(event_x+pixel_size,event_y,spread_weight) #Right
+
+                draw(event_x,event_y -pixel_size ,spread_weight) #Down
+                draw(event_x,event_y +pixel_size ,spread_weight) #Up
+
+
+
+
+
+
+    #Left click to Draw, command + left click = erase   
+    canvas.bind("<B1-Motion>", parse_L_click)
+    canvas.bind("<Button-1>", parse_L_click)
+
+    #Right click to erase
+    canvas.bind("<B2-Motion>", parse_R_click)
+    canvas.bind("<Button-2>", parse_R_click)
+
+    #R to erase
+    canvas.bind("<r>", erase)
+
+
     
+
+    canvas.focus_set()
 
     initalise_canvas()
     window.mainloop()
