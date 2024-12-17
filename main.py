@@ -22,6 +22,26 @@ class Activation_ReLU: #Rectify linear unit
     def forward(self,inputs):
         self.output = np.maximum(0,inputs) #Rectify function (0,x)
 
+class Loss:
+    def calculate(self,output,y):
+        sample_losses = self.forward(output, y)
+        data_loss = np.mean(sample_losses)
+        return data_loss
+
+class Loss_CatergoricalCrossentropy(Loss):
+    def forward(self,y_pred,y_true):
+        samples = len(y_pred)
+        y_pred_clipped = np.clip(y_pred, 1e-7, 1-1e-7)
+
+        if len(y_true.shape) == 1: #Scalar values "[0,1]"
+            correct_confidences = y_pred_clipped[range(samples), y_true]
+        elif len(y_true.shape) == 2: #One hot encoded vector "[[0,1],[1,0]]"
+            correct_confidences = np.sum(y_pred_clipped*y_true, axis=1) #sum turns matrix into vector
+        
+        negative_log_likelihoods = -np.log(correct_confidences)
+        return correct_confidences
+
+
 
 #==Softmax Activation, Occurs Before output layer==
 class Activation_Softmax:
@@ -50,3 +70,6 @@ dense2.forward(activation1.output)
 activation2.forward(dense2.output)
 
 print(activation2.output[:5])
+loss_function = Loss_CatergoricalCrossentropy()
+loss = loss_function.calculate(activation2.output, y)
+print("Loss: ",loss)

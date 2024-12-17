@@ -23,10 +23,18 @@ def main():
     
     drawing_canvas = np.zeros((n_pixels,n_pixels), dtype=np.uint8)
     
-    draw_intensity = 100
-    draw_thickness = 5
+    draw_intensity = 90
+    draw_thickness = 2
 
     canvas_list = []
+
+    class grid:
+        def __init__(self,rect,):
+            self.rect = rect
+            self.root = "goop"
+
+
+
 
     def initalise_canvas():
         for i in range(n_pixels):
@@ -44,7 +52,7 @@ def main():
 
 
 
-    def calculateWeight(hex): # 0 is white, 255 is black
+    def calculateWeight(hex): # 0 is white, 255 is black, Arguement is hex string
             old_fill = 255 - int(hex[1:3], base=16) 
             return old_fill
  
@@ -77,7 +85,11 @@ def main():
         for square in canvas_list:
             canvas.itemconfig(square, fill="#FFFFFF")  # Clear all to white
 
-
+    def export(event):
+        pixel_arr = []
+        for pixel in canvas_list:
+            pixel_arr.append(round((calculateWeight(canvas.itemcget(pixel, "fill")) / 255.0), 2)) #Append a normalised value pixel value, 0 is white, 1 is black
+        return pixel_arr
 
 
     def draw(event_x,event_y, weight):
@@ -97,16 +109,16 @@ def main():
             new_color = calculateColour(new_weight)
             canvas.itemconfig(target, fill=new_color)  # Change the fill color to black
 
-            weight_loss = (draw_intensity // draw_thickness)
-            spread_weight = weight - weight_loss
-            # print(spread_weight)
+            if draw_thickness > 0:
+                weight_loss = (draw_intensity // draw_thickness)
+                spread_weight = weight - weight_loss
 
-            if spread_weight > 0 or (weight < 0 and -(255+weight) // weight_loss < draw_thickness): #Shade nearby pixels
-                draw(event_x-pixel_size,event_y, spread_weight) #Left
-                draw(event_x+pixel_size,event_y,spread_weight) #Right
+                if spread_weight > 0 or (weight < 0 and -(255+weight) // weight_loss < draw_thickness): #Shade nearby pixels
+                    draw(event_x-pixel_size,event_y, spread_weight) #Left
+                    draw(event_x+pixel_size,event_y,spread_weight) #Right
 
-                draw(event_x,event_y -pixel_size ,spread_weight) #Down
-                draw(event_x,event_y +pixel_size ,spread_weight) #Up
+                    draw(event_x,event_y -pixel_size ,spread_weight) #Down
+                    draw(event_x,event_y +pixel_size ,spread_weight) #Up
 
 
 
@@ -124,7 +136,8 @@ def main():
     #R to erase
     canvas.bind("<r>", erase)
 
-
+    #O to export
+    canvas.bind("<o>", export)
     
 
     canvas.focus_set()
