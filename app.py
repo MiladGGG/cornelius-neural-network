@@ -1,12 +1,14 @@
 import tkinter as tk
 import numpy as np
+from main import run_network
 
 def main():
     window = tk.Tk()
     window.title("Draw")
 
     #Canvas is square
-    n_pixels = 30
+    n_pixels = 30 
+
 
     canvas_size = 15 #Affects x and y
     canvas_size_y = n_pixels * canvas_size 
@@ -24,7 +26,7 @@ def main():
     drawing_canvas = np.zeros((n_pixels,n_pixels), dtype=np.uint8)
     
     draw_intensity = 90
-    draw_thickness = 2
+    draw_thickness = 3
 
     canvas_list = []
 
@@ -89,6 +91,8 @@ def main():
         pixel_arr = []
         for pixel in canvas_list:
             pixel_arr.append(round((calculateWeight(canvas.itemcget(pixel, "fill")) / 255.0), 2)) #Append a normalised value pixel value, 0 is white, 1 is black
+
+        run_network(pixel_arr)
         return pixel_arr
 
 
