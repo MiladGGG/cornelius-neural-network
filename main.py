@@ -14,6 +14,15 @@ class Layer_Dense: #Creates Neuron layer with random weights
         #Apply weights, add biases, produce output
         self.output = np.dot(inputs,self.weights) + self.biases
 
+    def backward(self, dvalues, learning_rate): #BACKPROPAGATE WOO
+        self.dweights = np.dot(self.inputs.T, dvalues)
+        self.dbiases = np.sum(dvalues, axis=0, keepdims=True)
+
+        self.dinputs = np.dot(dvalues,self.weights.T)
+
+        self.weights -= learning_rate * self.dweights
+        self.biases -= learning_rate * self.dbiases
+
 
 class Activation_ReLU: #Rectify linear unit
     def forward(self,inputs):
@@ -49,6 +58,13 @@ class Loss_CatergoricalCrossentropy(Loss): #Calculate output layer loss
         return correct_confidences
 
 
+
+
+
+network_initialised = False
+
+def initialise_network(inputs):
+    pass    
 
 
 def run_network(inputs):
