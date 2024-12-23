@@ -35,6 +35,11 @@ class Activation_Softmax:
         exp_values = np.exp(inputs) - np.max(inputs, axis=1, keepdims=True)
         probabilities =  exp_values / np.sum(exp_values, axis=1, keepdims=True)
         self.output = probabilities
+
+    def backward(self, dvalues):
+        self.dinputs = dvalues.copy()
+
+        self.dinputs[self.inputs <= 0] = 0
 #==
 
 
@@ -57,48 +62,68 @@ class Loss_CatergoricalCrossentropy(Loss): #Calculate output layer loss
         negative_log_likelihoods = -np.log(correct_confidences)
         return correct_confidences
 
+    def backward(self, y_pred, y_true):
+        samples = len(self.y_pred)
 
+        dvalues = self.y_pred - self.y_true
+        dvalues = dvalues / samples
 
+        return dvalues
 
 
 network_initialised = False
 
-def initialise_network(inputs):
-    pass    
+class Neural_Network:
 
+    def initialise_network(self, inputs):
+        #Currently 2 outputs, 64 neurons in each hidden layers, 900 px input
+        self.inputs = inputs
 
-def run_network(inputs):
+        #Hidden Layer #1
+        self.Layer1 = Layer_Dense(len(inputs), 64)
+        self.Activation1 = Activation_ReLU()
     
-    #Hidden Layer #1
-    Layer1 = Layer_Dense(len(inputs), 64)
-    Activation1 = Activation_ReLU()
+        #Hidden Layer #2
+        self.Layer2 = Layer_Dense(64,64)
+        self.Activation2 = Activation_ReLU()
 
-    Layer1.forward(inputs)
-    Activation1.forward(Layer1.output)
+        #Output Layer
+        self.OutputLayer = Layer_Dense(64, 2)
+        self.ActivationOutput = Activation_Softmax()
+        
+        #Loss
+        self.true_values = np.array([1,0])
+        self.Loss = Loss_CatergoricalCrossentropy()
+ 
 
-    #Hidden Layer #2
-    Layer2 = Layer_Dense(64,64)
-    Activation2 = Activation_ReLU()
+    def run_network(self):
+        
+        #INPUT layer -> Hidden Layer #1
+        self.Layer1.forward(self.inputs)
+        self.Activation1.forward(self.Layer1.output)
 
-    Layer2.forward(Activation1.output)
-    Activation2.forward(Layer2.output)
-    
-    #Output Layer
-    OutputLayer = Layer_Dense(64, 2)
-    ActivationOutput = Activation_Softmax()
+        #Layer 1--> Hidden Layer #2
+        self.Layer2.forward(self.Activation1.output)
+        self.Activation2.forward(self.Layer2.output)
+        
+        #Layer 2 --> Output Layer
+        self.OutputLayer.forward(self.Activation2.output)
+        self.ActivationOutput.forward(self.OutputLayer.output) #Softmax
 
-    OutputLayer.forward(Activation2.output)
-    ActivationOutput.forward(OutputLayer.output)
+        #Probabilities
+        self.probabilities = self.ActivationOutput.output 
+        print("Probabilities: ", self.probabilities)
+        
+        #Loss
+        loss_output = self.Loss.forward(self.probabilities, self.true_values) #Compare output to constant true values
+        print("Loss: ", loss_output)
 
-    #Probabilities
-    probabilities = ActivationOutput.output 
-    print("Probabilities: ", probabilities)
-    
-    #Loss
-    true_values = np.array([1,0])
-    Loss = Loss_CatergoricalCrossentropy()
-    loss_output = Loss.forward(probabilities, true_values)
-    print("Loss: ", loss_output)
+
+    def propagate_backward(self):
+        self.Loss.backward()
+        print(self.Loss.dvalues)
+
+
     
 
 

@@ -1,6 +1,6 @@
 import tkinter as tk
 import numpy as np
-from main import run_network
+from main import Neural_Network
 
 def main():
     window = tk.Tk()
@@ -87,13 +87,29 @@ def main():
         for square in canvas_list:
             canvas.itemconfig(square, fill="#FFFFFF")  # Clear all to white
 
+
+    
+
+
+
+
+
+
+    def call_network(inputs):
+        nn = Neural_Network()
+        nn.initialise_network(inputs)
+        nn.run_network()
+        nn.propagate_backward()
+
+
+
+
     def export(event):
-        pixel_arr = []
+        pixel_arr = [] #1D list of inputs
         for pixel in canvas_list:
             pixel_arr.append(round((calculateWeight(canvas.itemcget(pixel, "fill")) / 255.0), 2)) #Append a normalised value pixel value, 0 is white, 1 is black
 
-        run_network(pixel_arr)
-        return pixel_arr
+        call_network(pixel_arr)
 
 
     def draw(event_x,event_y, weight):
