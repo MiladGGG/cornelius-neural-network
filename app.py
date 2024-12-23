@@ -28,6 +28,11 @@ def main():
     draw_intensity = 90
     draw_thickness = 3
 
+    nn = Neural_Network()
+    nn.initialise_network()
+
+
+
     canvas_list = []
 
     class grid:
@@ -92,14 +97,24 @@ def main():
 
 
 
+    def switch_mode(event):
+        mode = nn.true_values[0]
+        print(mode)
+        if mode == 0:
+            nn.true_values = np.array([1,0])
+        elif mode == 1:
+            nn.true_values = np.array([0,1])
+
+        print("switched", nn.true_values)
+
+
 
 
 
     def call_network(inputs):
-        nn = Neural_Network()
-        nn.initialise_network(inputs)
-        nn.run_network()
-        nn.propagate_backward()
+        for i in range(5):
+            nn.run_network(inputs)
+            nn.propagate_backward()
 
 
 
@@ -158,6 +173,8 @@ def main():
 
     #O to export
     canvas.bind("<o>", export)
+    
+    canvas.bind("<l>", switch_mode)
     
 
     canvas.focus_set()

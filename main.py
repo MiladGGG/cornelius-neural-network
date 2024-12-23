@@ -14,6 +14,8 @@ class Layer_Dense: #Creates Neuron layer with random weights
         #Apply weights, add biases, produce output
         self.output = np.dot(inputs,self.weights) + self.biases
 
+        self.inputs = np.array(inputs)  #Store to be used in backward pass
+
     def backward(self, dvalues, learning_rate): #BACKPROPAGATE WOO
         self.dweights = np.dot(self.inputs.T, dvalues)
         self.dbiases = np.sum(dvalues, axis=0, keepdims=True)
@@ -63,24 +65,31 @@ class Loss_CatergoricalCrossentropy(Loss): #Calculate output layer loss
         return correct_confidences
 
     def backward(self, y_pred, y_true):
-        samples = len(self.y_pred)
+        samples = len(y_pred)
 
-        dvalues = self.y_pred - self.y_true
-        dvalues = dvalues / samples
+        self.dvalues = y_pred - y_true
+        self.dvalues = self.dvalues / samples
 
-        return dvalues
+        return self.dvalues
 
 
-network_initialised = False
+
+
+
+
+
+
+
 
 class Neural_Network:
 
-    def initialise_network(self, inputs):
+    def initialise_network(self):
         #Currently 2 outputs, 64 neurons in each hidden layers, 900 px input
-        self.inputs = inputs
+        self.learning_rate = 0.01
 
-        #Hidden Layer #1
-        self.Layer1 = Layer_Dense(len(inputs), 64)
+ 
+        #Hidden Layer #1, 30 by 30px input
+        self.Layer1 = Layer_Dense(900, 64)
         self.Activation1 = Activation_ReLU()
     
         #Hidden Layer #2
@@ -96,8 +105,8 @@ class Neural_Network:
         self.Loss = Loss_CatergoricalCrossentropy()
  
 
-    def run_network(self):
-        
+    def run_network(self, inputs):
+        self.inputs = inputs
         #INPUT layer -> Hidden Layer #1
         self.Layer1.forward(self.inputs)
         self.Activation1.forward(self.Layer1.output)
@@ -116,36 +125,22 @@ class Neural_Network:
         
         #Loss
         loss_output = self.Loss.forward(self.probabilities, self.true_values) #Compare output to constant true values
-        print("Loss: ", loss_output)
+        #print("Loss: ", loss_output)
 
 
     def propagate_backward(self):
-        self.Loss.backward()
-        print(self.Loss.dvalues)
+        #Dvalues
+        self.dvalues = self.Loss.backward(self.probabilities, self.true_values)
 
+        self.OutputLayer.backward(self.dvalues, self.learning_rate) #Get dinputs for other layers
+
+
+        #Optimise layer 2
+        self.Layer2.backward(self.OutputLayer.dinputs, self.learning_rate)
+
+        #Optimise layer 1
+        self.Layer1.inputs = np.array(self.Layer1.inputs).reshape(1, -1)#Reshape input to work
+        self.Layer1.backward(self.Layer2.dinputs,self.learning_rate)
 
     
 
-
-
-#example data
-"""
-X , y= spiral_data(samples=100, classes=3)
-dense1= Layer_Dense(2,3) #2 coordinates in x,y data
-
-activation1 = Activation_ReLU()
-
-dense2= Layer_Dense(3,3)
-
-acti    vation2 = Activation_Softmax()
-
-dense1.forward(X)
-activation1.forward(dense1.output)
-dense2.forward(activation1.output)
-activation2.forward(dense2.output)
-
-print(activation2.output[:5])
-loss_function = Loss_CatergoricalCrossentropy()
-loss = loss_function.calculate(activation2.output, y)
-print("Loss: ",loss)
-"""
