@@ -34,7 +34,7 @@ class Activation_ReLU: #Rectify linear unit
 #==Softmax Activation, Occurs Before output layer==
 class Activation_Softmax:
     def forward(self, inputs): 
-        exp_values = np.exp(inputs) - np.max(inputs, axis=1, keepdims=True)
+        exp_values = np.exp(inputs - np.max(inputs, axis=1, keepdims=True))
         probabilities =  exp_values / np.sum(exp_values, axis=1, keepdims=True)
         self.output = probabilities
 
@@ -84,9 +84,10 @@ class Loss_CatergoricalCrossentropy(Loss): #Calculate output layer loss
 class Neural_Network:
 
     def initialise_network(self):
-        #Currently 2 outputs, 64 neurons in each hidden layers, 900 px input
+        #5 outputs, 64 neurons in each hidden layers, 900 px input
         self.learning_rate = 0.01
         self.hasRun = False
+        self.cumalative_int = 0
  
         #Hidden Layer #1, 30 by 30px input
         self.Layer1 = Layer_Dense(900, 64)
@@ -97,12 +98,14 @@ class Neural_Network:
         self.Activation2 = Activation_ReLU()
 
         #Output Layer
-        self.OutputLayer = Layer_Dense(64, 2)
+        self.OutputLayer = Layer_Dense(64, 5)
         self.ActivationOutput = Activation_Softmax()
         
         #Loss
-        self.true_values = np.array([1,0])
+        self.true_values = np.array([0,0,0,0,0])
         self.Loss = Loss_CatergoricalCrossentropy()
+
+
 
         
  
@@ -123,20 +126,40 @@ class Neural_Network:
 
         #Probabilities
         self.probabilities = self.ActivationOutput.output 
-        print("Probabilities: ", self.probabilities)
         
         #Loss
         loss_output = self.Loss.forward(self.probabilities, self.true_values) #Compare output to constant true values
-        #print("Loss: ", loss_output)
         self.hasRun = True
+
+
 
 
     def save_model(self):
         np.save("trained_model/weights1.npy", self.Layer1.weights)
+        np.save("trained_model/biases1.npy", self.Layer1.biases)
+
         np.save("trained_model/weights2.npy", self.Layer2.weights)
+        np.save("trained_model/biases2.npy", self.Layer2.biases)
+
         np.save("trained_model/weightsOutput.npy", self.OutputLayer.weights)
+        np.save("trained_model/biasesOutput.npy", self.OutputLayer.biases)
 
 
+    def load_model(self):
+        try:
+            self.Layer1.weights = np.load("trained_model/weights1.npy")
+            self.Layer1.biases = np.load("trained_model/biases1.npy")
+
+            self.Layer2.weights = np.load("trained_model/weights2.npy")
+            self.Layer2.biases = np.load("trained_model/biases2.npy")
+
+            self.OutputLayer.weights = np.load("trained_model/weightsOutput.npy")
+            self.OutputLayer.biases = np.load("trained_model/biasesOutput.npy")
+
+            return 0
+
+        except:
+            return 1
 
     def propagate_backward(self):
         #Dvalues
@@ -152,6 +175,5 @@ class Neural_Network:
         self.Layer1.inputs = np.array(self.Layer1.inputs).reshape(1, -1)#Reshape input to work
         self.Layer1.backward(self.Layer2.dinputs,self.learning_rate)
 
-        self.save_model()
     
 
