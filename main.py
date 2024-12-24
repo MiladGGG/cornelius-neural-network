@@ -86,7 +86,7 @@ class Neural_Network:
     def initialise_network(self):
         #Currently 2 outputs, 64 neurons in each hidden layers, 900 px input
         self.learning_rate = 0.01
-
+        self.hasRun = False
  
         #Hidden Layer #1, 30 by 30px input
         self.Layer1 = Layer_Dense(900, 64)
@@ -103,6 +103,8 @@ class Neural_Network:
         #Loss
         self.true_values = np.array([1,0])
         self.Loss = Loss_CatergoricalCrossentropy()
+
+        
  
 
     def run_network(self, inputs):
@@ -126,6 +128,14 @@ class Neural_Network:
         #Loss
         loss_output = self.Loss.forward(self.probabilities, self.true_values) #Compare output to constant true values
         #print("Loss: ", loss_output)
+        self.hasRun = True
+
+
+    def save_model(self):
+        np.save("trained_model/weights1.npy", self.Layer1.weights)
+        np.save("trained_model/weights2.npy", self.Layer2.weights)
+        np.save("trained_model/weightsOutput.npy", self.OutputLayer.weights)
+
 
 
     def propagate_backward(self):
@@ -142,5 +152,6 @@ class Neural_Network:
         self.Layer1.inputs = np.array(self.Layer1.inputs).reshape(1, -1)#Reshape input to work
         self.Layer1.backward(self.Layer2.dinputs,self.learning_rate)
 
+        self.save_model()
     
 

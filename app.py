@@ -1,10 +1,15 @@
 import tkinter as tk
+from tkinter import PhotoImage 
+from PIL import Image, ImageTk
+
 import numpy as np
 from main import Neural_Network
 
 def main():
     window = tk.Tk()
-    window.title("Draw")
+    window.title("Cornelius | Neural Network")
+    window.resizable(True, True)
+
 
     #Canvas is square
     n_pixels = 30 
@@ -12,7 +17,7 @@ def main():
 
     canvas_size = 15 #Affects x and y
     canvas_size_y = n_pixels * canvas_size 
-    canvas_size_x = canvas_size_y * 2 
+    canvas_size_x = canvas_size_y * 1.05 
 
     canvas_x_offset = 30
     canvas_y_offset = 20
@@ -20,13 +25,74 @@ def main():
 
     pixel_size = canvas_size_y // n_pixels - 1 #-1 to fit on window
 
-    canvas = tk.Canvas(window, width=canvas_size_x, height=canvas_size_y, bg="white")
+    # frame holding BOTH left and right
+    main_frame = tk.Frame(window)
+    main_frame.pack(fill=tk.BOTH, expand=True)
+
+    # drawing Canvas
+    left_frame = tk.Frame(main_frame)
+    left_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+    canvas = tk.Canvas(left_frame, width=canvas_size_x, height=canvas_size_y, bg="white")
     canvas.pack()
-    
-    drawing_canvas = np.zeros((n_pixels,n_pixels), dtype=np.uint8)
-    
+
+    drawing_canvas = np.zeros((n_pixels, n_pixels), dtype=np.uint8)
+
     draw_intensity = 90
     draw_thickness = 3
+
+
+
+
+
+    def train_click(i):
+        if nn.hasRun:
+            back_propagate(i)
+        else:
+            print("Cannot train. Neural Network has not been run yet.")
+
+    # Right frame
+    right_frame = tk.Frame(main_frame, width=canvas_size_y, height=canvas_size_y)
+    right_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=False)
+
+    right_label = tk.Label(right_frame, text="Cornelius Control Station")
+    right_label.pack(padx=10, pady=10)
+
+    image_files = ["images/smile.png","images/star.png","images/heart.png","images/man.png","images/triangle.png"]
+    prediction_texts = []
+
+    for i in range(5):
+
+        row_frame = tk.Frame(right_frame)
+        row_frame.pack(anchor="w", pady=10)  
+
+
+        img = Image.open(image_files[i])
+        img = img.resize((60, 60))
+        img_tk = ImageTk.PhotoImage(img)
+
+        label = tk.Label(row_frame, text="0.00%", image=img_tk, compound="right")
+        label.image = img_tk  # garbage collection
+        label.grid(row=0, column=0, padx=5, sticky="w")  
+
+
+
+        button = tk.Button(row_frame, text="Train", command=lambda i=i: train_click(i))
+        button.grid(row=0, column=1, padx=5, sticky="e")  
+
+
+        prediction_texts.append(label)
+
+ 
+
+
+
+
+
+
+
+
+
 
     nn = Neural_Network()
     nn.initialise_network()
@@ -34,12 +100,6 @@ def main():
 
 
     canvas_list = []
-
-    class grid:
-        def __init__(self,rect,):
-            self.rect = rect
-            self.root = "goop"
-
 
 
 
@@ -112,10 +172,21 @@ def main():
 
 
     def call_network(inputs):
-        for i in range(5):
-            nn.run_network(inputs)
-            nn.propagate_backward()
+        nn.run_network(inputs)
 
+        for i in range(len(prediction_texts)): #Update UI text
+            text_string = "%.2f%c"%(nn.probabilities[0][i] *100,'%')
+            prediction_texts[i].config(prediction_texts[i], text=text_string)
+
+
+
+    def back_propagate(i):
+        true_array = np.array([0,0])
+        true_array[i] = 1
+        nn.true_values = true_array
+        print("Trained with: ",true_array)
+
+        nn.propagate_backward()
 
 
 
