@@ -177,8 +177,67 @@ def main():
 
     load_click(button)
 
+
+    class box:
+        def __init__(self, weight,id):
+            self.weight = weight
+            self.id = id
+
+
+    class colour:
+        def __init__(self):
+            self.r = 0
+            self.b = 0
+            self.g = 0
+            self.probability = 255
+            self.colour = "black" #Stores desired colour of the entire canvas
+        
+        def set_colour(self,colour):
+            self.colour = colour
+
+        def set_probability(self, probability):
+            self.probability = probability *255 # as decimal
+            self.probability = int(self.probability)
+
+
+        def calculate_colour(self,weight):
+            if self.colour == "black":
+                self.r = 255 - weight
+                self.g = 255 - weight
+                self.b = 255 - weight
+            
+
+
+            elif self.colour == "red":
+                self.r = self.probability
+                self.g = 255 - weight
+                self.b = 255 - weight
+            
+
+        def get(self,weight): #Constructs Hexcode colour eg #422AF0
+            self.calculate_colour(weight)
+            full_str = "#"
+            hex_str = hex(self.r)[2:4]
+            if len(hex_str) == 1: #Solves bug with hex formatting
+                hex_str = "0"+hex_str
+            full_str += hex_str
+            hex_str = hex(self.g)[2:4]
+            if len(hex_str) == 1: #Solves bug with hex formatting
+                hex_str = "0"+hex_str
+            full_str += hex_str
+            hex_str = hex(self.b)[2:4]
+            if len(hex_str) == 1: #Solves bug with hex formatting
+                hex_str = "0"+hex_str
+            full_str += hex_str
+
+            return full_str
+
+
+    colour = colour()
+
+
     canvas_list = []
-    drawn_list = []
+    drawn_list = [] #for optimisation, skips blank squares during iteration
     def initalise_canvas():
         for i in range(n_pixels):
             for j in range(n_pixels):
@@ -189,7 +248,7 @@ def main():
                     fill="#FFFFFF" , outline="purple"
                 )
                 #Store coordinates to list
-                canvas_list.append(rect)
+                canvas_list.append(box(0, rect))
 
 
 
@@ -244,7 +303,10 @@ def main():
 
     def erase(event):
         for square in canvas_list:
-            canvas.itemconfig(square, fill="#FFFFFF")  # Clear all to white
+            canvas.itemconfig(square.id, fill="#FFFFFF")  # Clear all to white
+            square.weight = 0
+        drawn_list.clear()
+
         export()
         log("Erased canvas sucessfully")
 
@@ -259,9 +321,11 @@ def main():
     def change_colours(index,val):
         
         if(val > 40):
-            for r in canvas_list:
-                new_colour = calculateColour(calculateWeight(canvas.itemcget(r,"fill")) ,index,val)
-                canvas.itemconfig(r, fill=new_colour)
+            colour.set_colour("red")
+            colour.set_probability(val.item()/100)
+            for box in drawn_list:
+                new_colour = colour.get(box.weight)
+                canvas.itemconfig(box.id, fill=new_colour)
 
 
 
@@ -275,13 +339,13 @@ def main():
 
         max_val = max(nn.probabilities[0])
         index = np.where(nn.probabilities[0] == max(nn.probabilities[0]))[0][0]
-        change_colours(index, max_val * 100)
+        #change_colours(index, max_val * 100)
 
 
 
 
     def back_propagate(i):
-        #Get true value from train button click
+        #i is index for true value, EG: 0 = smile face
         true_array = np.array([0,0,0,0,0]) #One hot encoded
         true_array[i] = 1 #Index the correct value
         nn.true_values = true_array #Set within memory
@@ -295,10 +359,44 @@ def main():
 
 
 
+
+    def save_data(event):
+        pixel_arr = [] #1D list of inputs
+        for pixel in canvas_list:
+            pixel_arr.append(round((pixel.weight / 255.0),2))
+
+        text_string = "training_material/4_6.npy"
+        np.save(text_string , pixel_arr)
+        log("Saved data: %s"%(text_string))
+
+
+    '''
+    #Batch #1 is drawn as in the reference image
+    #Batch #2 is drawn in the middle of canvas
+    #Batch #3 is drawn at the bottom of canvas
+    #Batch #4 is drawn large and shaded in 
+    #Batch #5 is drawn smaller and shaded in, (Eyes were instead made close and far)
+    #Batch #6 is drawn very thin (1 thickness)
+    '''
+
+    def load_data(event): 
+        trained_amount = 0
+        for i in range(1,7): #Batch
+            for ii in range(5): #All 5  inputs
+                filename = "training_material/%d_%d.npy"%(ii,i)
+                a = np.load(filename)
+                call_network(a) #Call
+                back_propagate(ii) #Back propagate with index
+                trained_amount += 1
+
+        erase(0)
+        log("Trained %d samples of data!"%(trained_amount))
+
+
     def export():
         pixel_arr = [] #1D list of inputs
         for pixel in canvas_list:
-            pixel_arr.append(round((calculateWeight(canvas.itemcget(pixel, "fill")) / 255.0), 2)) #Append a normalised value pixel value, 0 is white, 1 is black
+            pixel_arr.append(round((pixel.weight / 255.0),2))
 
         call_network(pixel_arr)
 
@@ -317,10 +415,19 @@ def main():
             
             target = canvas_list[mouse_y + mouse_x* n_pixels]
 
+            prior_weight = calculateWeight(canvas.itemcget(target.id, "fill"))
+            new_weight = addWeights(prior_weight, weight)
+            
+            if prior_weight == 0 and new_weight > 0: #Cool feature but hurts performance, dont care 
+                drawn_list.append(target) #append to list
+            if prior_weight > 0 and new_weight == 0:
+                drawn_list.remove(target) 
+            
+            target.weight = new_weight
+            #new_color = calculateColour(new_weight,"black",0)
+            canvas.itemconfig(target.id, fill=colour.get(new_weight))  # Change the fill color to black
+            
 
-            new_weight = addWeights(calculateWeight(canvas.itemcget(target, "fill")), weight)
-            new_color = calculateColour(new_weight,"black",0)
-            canvas.itemconfig(target, fill=new_color)  # Change the fill color to black
 
             if draw_thickness > 0:
                 weight_loss = (draw_intensity // draw_thickness)
@@ -357,9 +464,9 @@ def main():
     canvas.bind("<r>", erase)
 
     #O to export
-    canvas.bind("<o>", export)
+    canvas.bind("<o>", save_data)
     
-    #canvas.bind("<l>", switch_mode)
+    canvas.bind("<l>", load_data)
     
 
     canvas.focus_set()
