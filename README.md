@@ -14,7 +14,7 @@ Download the repository and run:
 
 ## Features
 - **Real-time prediction**: Neural network guesses as you draw.
-- **Custom Neural Network**: User can directly train and modify the neural netowork.
+- **Custom Neural Network**: User can directly train and modify the neural network.
 - **Colour-coded**: Canvas colour matches the network's prediction
 
 ## How It Works
