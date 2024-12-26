@@ -4,7 +4,7 @@ from PIL import Image, ImageTk
 
 import numpy as np
 import random #USed to shuffle training batches
-from main import Neural_Network
+from neural_network import Neural_Network
 
 def main():
     window = tk.Tk()
@@ -19,7 +19,6 @@ def main():
     canvas_size = 25 #Affects x and y
     canvas_size_y = n_pixels * canvas_size 
     canvas_size_x = canvas_size_y * 1.05 
-    print(canvas_size_y)
     canvas_x_offset = 30
     canvas_y_offset = 20
     window.focus_force()
@@ -77,15 +76,15 @@ def main():
     for i in range(5):
 
         row_frame = tk.Frame(right_frame)
-        row_frame.pack(anchor="w", pady=10)
+        row_frame.pack(anchor="c" , pady=20)
         row_frames.append(row_frame)  
 
 
         img = Image.open(image_files[i])
-        img = img.resize((60, 60))
+        img = img.resize((90, 90))
         img_tk = ImageTk.PhotoImage(img)
 
-        label = tk.Label(row_frame, text="0.00%", image=img_tk, compound="right")
+        label = tk.Label(row_frame, text="0.00%", image=img_tk, compound="right",font=("Arial",18))
         label.image = img_tk  # garbage collection
         label.grid(row=0, column=0, padx=5, sticky="w")  
 
